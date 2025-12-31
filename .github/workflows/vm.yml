@@ -1,0 +1,29 @@
+# File: .github/workflows/vm.yml
+name: ZUNRDP VM
+
+on: workflow_dispatch # Chỉ chạy khi bấm nút thủ công
+
+jobs:
+  run-vm:
+    runs-on: windows-latest
+    steps:
+    - name: Lấy code về máy
+      uses: actions/checkout@v3
+
+    - name: Cài đặt Tailscale
+      uses: tailscale/github-action@v2
+      with:
+        oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+        oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+        tags: tag:ci
+
+    - name: Cấu hình User & RDP
+      run: |
+        net user ADMINZUN ZunRDP@123456 /add
+        net localgroup administrators ADMINZUN /add
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -value 0
+
+    - name: Chạy ZUNRDP Script
+      run: .\run_vm.ps1
+      shell: powershell
+      
