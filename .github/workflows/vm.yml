@@ -1,29 +1,38 @@
-# File: .github/workflows/vm.yml
-name: ZUNRDP VM
+name: ZUNRDP VM ENGINE
 
-on: workflow_dispatch # Chỉ chạy khi bấm nút thủ công
+on: 
+  workflow_dispatch: # Chạy thủ công bằng nút bấm
 
 jobs:
-  run-vm:
+  zun-rdp-job:
     runs-on: windows-latest
-    steps:
-    - name: Lấy code về máy
-      uses: actions/checkout@v3
+    timeout-minutes: 360 # Máy sẽ chạy tối đa 6 tiếng
 
-    - name: Cài đặt Tailscale
+    steps:
+    - name: 1. Lay Code Tu Github
+      uses: actions/checkout@v4
+
+    - name: 2. Ket Noi Tailscale (Lay IP)
       uses: tailscale/github-action@v2
       with:
-        oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-        oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-        tags: tag:ci
+        # Sử dụng đúng tên Secret mà bạn đã đặt trên GitHub
+        authkey: ${{ secrets.TS_OAUTH_SECRET }}
 
-    - name: Cấu hình User & RDP
+    - name: 3. Cau Hinh Windows & RDP
       run: |
+        # Tao User va Mat khau
         net user ADMINZUN ZunRDP@123456 /add
         net localgroup administrators ADMINZUN /add
+        # Bat Remote Desktop
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        # Khong cho may ngu
+        powercfg /x -hibernate-timeout-ac 0
+        powercfg /x -standby-timeout-ac 0
+      shell: powershell
 
-    - name: Chạy ZUNRDP Script
+    - name: 4. Chay Script Quan Ly ZUNRDP
+      # Lenh nay se kich hoat file run_vm.ps1 ma ban da tao
       run: .\run_vm.ps1
       shell: powershell
-      
+
